@@ -1,0 +1,16 @@
+{
+  "name": "default",
+  "type": "mysql",
+  "synchronize": false,
+  "legacySpatialSupport": false,
+  "logging": true,
+  "migrationsRun": true,
+  "entities": ["./dist/src/models/**/*.js"],
+  "migrations": ["./dist/src/migrations/**/*.js"],
+  "subscribers": ["./dist/src/subscribers/**/*.js"],
+  "cli": {
+    "entitiesDir": "./src/models",
+    "migrationsDir": "./src/migrations",
+    "subscribersDir": "./src/subscribers"
+  }
+}

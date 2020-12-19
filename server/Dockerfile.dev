@@ -1,0 +1,46 @@
+###############################################################################
+###############################################################################
+##                      _______ _____ ______ _____                           ##
+##                     |__   __/ ____|  ____|  __ \                          ##
+##                        | | | (___ | |__  | |  | |                         ##
+##                        | |  \___ \|  __| | |  | |                         ##
+##                        | |  ____) | |____| |__| |                         ##
+##                        |_| |_____/|______|_____/                          ##
+##                                                                           ##
+## description     : Dockerfile for TsED Application                         ##
+## author          : TsED team                                               ##
+## date            : 20190820                                                ##
+## version         : 1.0                                                     ##
+###############################################################################
+###############################################################################
+FROM node:latest AS build
+
+# RUN apk update && apk add build-base git python bash
+
+WORKDIR /server
+
+EXPOSE 8081
+ENV PORT 8081
+ENV NODE_ENV development
+
+ADD package*.json ./
+RUN npm install -g nodemon
+RUN npm install
+
+COPY . .
+
+RUN chmod +x wait-for-it.sh
+
+ENV JWT_ACCESS_TOKEN Authorization
+ENV JWT_SECRET empresta-secret
+ENV JWT_ID_KEY 198023dc59e7bb8b9816d21298d3d41199661d77c6ffa8c90141c57c7b51072e
+ENV JWT_ID_IV 44465d3df2ce847ea204efa4f1eaf811
+ENV SALT_OR_ROUNDS 9
+ENV SESSION_COOKIE_SECRET 44465d3df2ce2222b52efa4f1eaf111
+ENV DB_HOST mysql
+ENV DB_PORT 3306
+ENV USERNAME Empresta
+ENV PASSWORD Empresta
+ENV DATABASE empresta
+
+CMD ./wait-for-it.sh mysql:3306 -t 50 -- npm run docker:debug

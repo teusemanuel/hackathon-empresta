@@ -1,0 +1,35 @@
+{
+	"folders": [
+		{
+			"name": "App"
+			"path": "app"
+		},
+		{
+			"name": "Server",
+			"path": "server"
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"**/.classpath": true,
+			"**/.project": true,
+			"**/.settings": true,
+			"**/.factorypath": true
+		},
+		"kotlin.compiler.jvm.target": "1.8",
+		"[typescript]": {
+			"editor.defaultFormatter": "vscode.typescript-language-features",
+			"editor.formatOnSave": true,
+			"editor.tabSize": 4,
+		},
+		"[javascript]": {
+			"editor.defaultFormatter": "vscode.typescript-language-features",
+			"editor.formatOnSave": true,
+			"editor.tabSize": 4,
+		},
+		"[json]": {
+			"editor.defaultFormatter": "vscode.json-language-features",
+			"editor.formatOnSave": true
+		},
+	}
+}
