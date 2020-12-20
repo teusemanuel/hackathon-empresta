@@ -1,18 +1,26 @@
 import "@tsed/ajv";
-import {PlatformApplication} from "@tsed/common";
+import {BeforeRoutesInit, PlatformApplication} from "@tsed/common";
 import {Configuration, Inject} from "@tsed/di";
+import {BadRequest} from "@tsed/exceptions";
 import "@tsed/platform-express"; // /!\ keep this import
 import "@tsed/swagger";
 import "@tsed/typeorm";
-import bodyParser from "body-parser";
 import compress from "compression";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import express from "express";
+import session from "express-session";
+import * as memoryStore from "memorystore";
 import methodOverride from "method-override";
-import typeormConfig from "./config/typeorm";
-import {UserModel} from "./models/UserModel";
+import {Strategy} from "passport-jwt";
+import "./core/response/result.mapper";
+import typeormConfig from "./core/typeorm";
+import "./filters/http-exception-filter";
+import {WrapperResponseFilter} from "./filters/wrapper.response-filter";
+import {User} from "./models/User";
 
 export const rootDir = __dirname;
+const MemoryStore = memoryStore(session);
 
 @Configuration({
   rootDir,
@@ -103,17 +111,17 @@ export const rootDir = __dirname;
         openapi: "3.1.0",
         info: {
           version: "1.0.1",
-          title: "Castelli Swagger documentation",
-          description: "Api utilizada pelos serviços da Castelli Events ©",
+          title: "Hackathon Empresta Swagger documentation",
+          description: "Api utilizada pelos serviços da Empresta no evento Hackathon",
           contact: {
             email: "teusemanuel@gmail.com",
             name: "Mateus Emanuel Araujo"
           }
         },
-        security: [{"Castelli-Auth-Token": []}],
+        security: [{"Empresta-Auth-Token": []}],
         components: {
           securitySchemes: {
-            "Castelli-Auth-Token": {
+            "Empresta-Auth-Token": {
               type: "http",
               scheme: "bearer",
               bearerFormat: "JWT"
@@ -127,21 +135,21 @@ export const rootDir = __dirname;
       doc: "api-v2",
       showExplorer: true,
       specVersion: "3.0.3",
-      // viewPath: process.env.NODE_ENV === "development" ? `${rootDir}/../views/swagger.ejs` : false,
       spec: {
         openapi: "3.1.0",
         info: {
           version: "2.0.1",
-          title: "Castelli Swagger documentation",
+          title: "Hackathon Empresta Swagger documentation",
+          description: "Api utilizada pelos serviços da Empresta no evento Hackathon",
           contact: {
             email: "teusemanuel@gmail.com",
             name: "Mateus Emanuel Araujo"
           }
         },
-        security: [{"Castelli-Auth-Token": []}],
+        security: [{"Empresta-Auth-Token": []}],
         components: {
           securitySchemes: {
-            "Castelli-Auth-Token": {
+            "Empresta-Auth-Token": {
               type: "http",
               scheme: "bearer",
               bearerFormat: "JWT"
@@ -160,7 +168,7 @@ export const rootDir = __dirname;
     }
   },
   passport: {
-    userInfoModel: UserModel,
+    userInfoModel: User,
     protocols: {
       jwt: {
         name: "jwt",
@@ -180,23 +188,50 @@ export const rootDir = __dirname;
   typeorm: typeormConfig,
   exclude: ["**/*.spec.ts", `${rootDir}/upload-files`]
 })
-export class Server {
+export class Server implements BeforeRoutesInit {
   @Inject()
   app: PlatformApplication;
 
   @Configuration()
   settings: Configuration;
 
+  allowedOrigins = ["http://0.0.0.0:9001", "https://0.0.0.0:9001", "http://localhost:9001", "https://localhost:9001"];
+
+  // Reflect the origin if it's in the allowed list or not defined (cURL, Postman, etc.)
+  corsOptions = {
+    origin: (requestOrigin: string | undefined, callback: (err: Error | null, allow?: boolean) => void): void => {
+      if (!requestOrigin || this.allowedOrigins.includes(requestOrigin)) {
+        callback(null, true);
+      } else {
+        callback(new BadRequest("Origin not allowed by CORS"));
+      }
+    }
+  };
+
   $beforeRoutesInit(): void {
     this.app
-      .use(cors())
+      .use(cors(this.corsOptions))
       .use(cookieParser())
       .use(compress({}))
       .use(methodOverride())
-      .use(bodyParser.json())
+      .use(express.json())
       .use(
-        bodyParser.urlencoded({
+        express.urlencoded({
           extended: true
+        })
+      )
+      .use(
+        session({
+          secret: process.env.SESSION_COOKIE_SECRET as string,
+          resave: false,
+          saveUninitialized: true,
+          store: new MemoryStore({
+            checkPeriod: 86400000 // prune expired entries every 24h
+          }),
+          cookie: {
+            maxAge: 86400000,
+            secure: false // set true if HTTPS is enabled
+          }
         })
       );
   }
